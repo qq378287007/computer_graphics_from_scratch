@@ -102,9 +102,9 @@ struct Canvas
         x012.insert(x012.cend(), x01.cbegin(), x01.cend());
         x012.insert(x012.cend(), x12.cbegin(), x12.cend());
 
-        // int m = floor(x012.size() / 2.0);
         vector<double> x_left;
         vector<double> x_right;
+        // int m = floor(x012.size() / 2.0);
         int m = x012.size() / 2;
         if (x02[m] < x012[m])
         {

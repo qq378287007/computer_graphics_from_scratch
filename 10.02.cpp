@@ -8,6 +8,10 @@ struct Vertice
     int x;
     int y;
     int z;
+    Vertice operator+(const Vertice &v) const
+    {
+        return Vertice{x + v.x, y + v.y, z + v.z};
+    }
 };
 struct Color
 {
@@ -34,35 +38,29 @@ struct Triangle
     Color color;
 };
 
-// 视口坐标转换为画布坐标
-// 视口坐标(Vx, Vy)和视口宽高(Vw, Vh)
-// 画布坐标(Cx, Cy)和画布宽高(Cw, Ch)
-void ViewPortToCanvas(int Vx, int Vy, int Vw, int Vh, int Cw, int Ch, int &Cx, int &Cy)
+struct Model
 {
-    Cx = Vx * Cw / Vw;
-    Cy = Vy * Ch / Vh;
-}
+    vector<Vertice> vertices;
+    vector<Triangle> triangles;
+};
 
-// 空间坐标转换为视口投影坐标
-// 空间坐标(x, y, z)
-// 视口平面与相机距离d
-// 视口投影坐标(Vx, Vy, Vz)
-void ViewPortToCanvas(int x, int y, int z, int d, int &Vx, int &Vy, int &Vz)
+struct Instance
 {
-    Vx = d * x / z;
-    Vy = d * y / z;
-    Vz = d;
-}
+    Model model;
+    Vertice position;
+};
+
+struct Scene
+{
+    vector<Instance> instances;
+};
 
 static int d = 1;
 Vertice ProjectVertex(const Vertice &V)
 {
-    Vertice V2;
-    V2.x = V.x / d;
-    V2.y = V.y / d;
-    V2.z = d;
-    return V2;
+    return Vertice{V.x * d / V.z, V.y * d / V.z, d};
 }
+
 void DrawWireframeTriangle(const Vertice &P0, const Vertice &P1, const Vertice &P2, Color color)
 {
 }
@@ -70,19 +68,22 @@ void RenderTriangle(const Triangle &triangle, const vector<Vertice> &projected)
 {
     DrawWireframeTriangle(projected[triangle.v[0]], projected[triangle.v[1]], projected[triangle.v[2]], triangle.color);
 }
-void RenderObject(const vector<Vertice> &vertices, const vector<Triangle> &triangles, const Vertice &T = {0, 0, 0})
+void RenderInstance(const Instance &instance)
 {
-    Vertice Vp;
+    auto model = instance.model;
     vector<Vertice> projected;
-    for (const Vertice &V : vertices)
+    for (auto V : model.vertices)
     {
-        Vp.x = V.x + T.x;
-        Vp.y = V.y + T.y;
-        Vp.z = V.z + T.z;
-        projected.emplace_back(ProjectVertex(Vp));
+        auto V_p = V + instance.position;
+        projected.emplace_back(ProjectVertex(V_p));
     }
-    for (const Triangle &T : triangles)
+    for (auto T : model.triangles)
         RenderTriangle(T, projected);
+}
+void RenderScene(const Scene &scene)
+{
+    for (auto I : scene.instances)
+        RenderInstance(I);
 }
 
 int main()
@@ -111,7 +112,14 @@ int main()
         {{2, 6, 7}, cyan},
         {{2, 7, 3}, cyan},
     };
-    RenderObject(vertices, triangles);
+
+    Model model{vertices, triangles};
+    Instance instance1{model, {0, 0, 5}};
+    Instance instance2{model, {1, 2, 3}};
+    Scene scene;
+    scene.instances.emplace_back(instance1);
+    scene.instances.emplace_back(instance2);
+    RenderScene(scene);
 
     return 0;
 }
